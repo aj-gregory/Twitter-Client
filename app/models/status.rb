@@ -1,22 +1,29 @@
 class Status < ActiveRecord::Base
-  # attr_accessible :title, :body
-  validates: :twitter_status_id, uniquness: true
+  attr_accessible :twitter_status_id, :body, :twitter_user_id
+  validates :twitter_status_id, :uniqueness => true
 
   def self.parse_twitter_status(params)
-    Status.new(JSON.parse(params))
+    Status.new(params)
   end
 
-  def fetch_statuses_for_user(user)
+  def self.fetch_statuses_for_user(user)
     status_url = Addressable::URI.new(
       :scheme => 'https',
       :host => 'api.twitter.com',
       :path => '1.1/statuses/user_timeline.json',
-      :query_values => { :screen_name => self.author.screen_name }
+      :query_values => { :screen_name => user.screen_name }
     ).to_s
 
-    returned = TwitterSession.get(status_url).body
+    returned = JSON.parse(TwitterSession.get(status_url).body)
 
-    persisted_statuses = author.statuses
+    params = []
+    returned.each do |hash|
+      selected = hash.select {|k,v| k == 'id' || k == 'text'}
+      params << {:twitter_status_id => selected['id'],
+                 :twitter_user_id => user.twitter_user_id, :body => selected['text']}
+    end
+
+    persisted_statuses = Status.all
 
     status_ids = []
     persisted_statuses.each do |status|
@@ -24,8 +31,8 @@ class Status < ActiveRecord::Base
     end
 
     new_statuses = []
-    returned.each do |hash|
-      unless status_ids.include?(hash["id"])
+    params.each do |hash|
+      unless status_ids.include?(hash[:twitter_status_id])
         new_statuses << Status.parse_twitter_status(hash)
       end
     end
@@ -35,7 +42,7 @@ class Status < ActiveRecord::Base
 
   belongs_to( :author,
               :class_name => "User",
-              :foreign_key => :twitter_user_id
+              :foreign_key => :twitter_user_id,
               :primary_key => :twitter_user_id
             )
 

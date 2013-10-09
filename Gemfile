@@ -29,7 +29,7 @@ gem 'oauth'
 gem 'rest-client'
 gem 'json'
 gem 'addressable'
-gem 'nokogiri'
+#gem 'nokogiri'
 
 # To use ActiveModel has_secure_password
 # gem 'bcrypt-ruby', '~> 3.0.0'
