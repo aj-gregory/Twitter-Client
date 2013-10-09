@@ -1,9 +1,9 @@
 class Status < ActiveRecord::Base
-  attr_accessible :twitter_status_id, :body, :twitter_user_id
+  attr_accessible :twitter_status_id, :body, :twitter_user_id, :user_id
   validates :twitter_status_id, :uniqueness => true
 
   def self.parse_twitter_status(params)
-    Status.new(params)
+    Status.create!(params)
   end
 
   def self.fetch_statuses_for_user(user)
@@ -20,7 +20,8 @@ class Status < ActiveRecord::Base
     returned.each do |hash|
       selected = hash.select {|k,v| k == 'id' || k == 'text'}
       params << {:twitter_status_id => selected['id'],
-                 :twitter_user_id => user.twitter_user_id, :body => selected['text']}
+                 :twitter_user_id => user.twitter_user_id, 
+                 :user_id => user.id, :body => selected['text']}
     end
 
     persisted_statuses = Status.all
